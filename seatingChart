@@ -1,0 +1,244 @@
+#!/usr/bin/python
+
+import sys
+import os
+import re
+import urllib2
+import optparse
+import signal
+from random import shuffle
+
+#---------------------------Get the tables--------------------------#
+
+print "\nPlease list each table in the following format:\n\n\
+	Table Name, Capacity\n\
+	For example: 1, 5\n\n\
+When you are finished, hit 'Enter'\n"
+
+tables = []
+nTables = 0
+
+sentinel = ''
+for line in iter(raw_input, sentinel):
+	newTable = line
+	newTable = newTable.split(', ')
+	tables.append([])
+	tables[nTables] = newTable
+	nTables += 1
+
+#---------------------------Get the students--------------------------#
+
+print "\nPlease list each student in the folling format:\n\n\
+	 Name, Antsy?, Struggling?, Current Partner, Current Table\n\
+	 For example: Nick, N, Y, none, 2\n\n\
+If the student has no current seat partner, please put 'none.'\n\
+When you are finished, hit 'Enter'\n"
+
+students = []
+nStudents = 0
+nPairs = 0
+
+sentinel = ''
+for line in iter(raw_input, sentinel):
+	newStudent = line
+	newStudent = newStudent.split(', ')
+	students.append([])
+	students[nStudents] = newStudent
+
+	if students[nStudents][3] != "none": #update the number of pairs
+		nPairs += 1
+	
+	nStudents += 1
+
+nPairs = nPairs/2
+
+#--------------------------Sort by need-----------------------------#
+
+shuffle(students)	#randomly permute student list
+
+strugglingAndAntsy = []	#list of students both struggling and antsy
+nStrugglingAndAntsy = 0 #size
+for kid in students:
+	if kid[1] is 'Y' and kid[2] is 'Y':
+		strugglingAndAntsy.append([])
+		strugglingAndAntsy[nStrugglingAndAntsy] = kid
+		nStrugglingAndAntsy += 1
+
+struggling = []	#list of students just struggling
+nStruggling = 0 #size
+for kid in students:
+	if kid[1] is not 'Y' and kid[2] is 'Y':
+		struggling.append([])
+		struggling[nStruggling] = kid
+		nStruggling += 1
+
+antsy = []	#list of students just antsy
+nAntsy = 0 #size
+for kid in students:
+	if kid[1] is 'Y' and kid[2] is not 'Y':
+		antsy.append([])
+		antsy[nAntsy] = kid
+		nAntsy += 1
+
+perfect = []	#leftovers
+nPerfect = 0 		#size
+for kid in students:
+	if kid[1] is not 'Y' and kid[2] is not 'Y':
+		perfect.append([])
+		perfect[nPerfect] = kid
+		nPerfect += 1
+
+#--------------------------Make pairs!------------------------------#
+
+pairs = []
+pairIndex = 0
+
+while pairIndex < nPairs:
+
+	if strugglingAndAntsy:
+		
+		pairs.append([])				#get first kid
+		pairs[pairIndex].append([])
+		pairs[pairIndex][0] = strugglingAndAntsy.pop()
+
+		if pairs[pairIndex][0][3] != perfect[-1][0]: #preventing same pairs
+			pairs[pairIndex].append([])
+			pairs[pairIndex][1] = perfect.pop()
+
+		else:	#remove first perfect kid instead of last
+			pairs[pairIndex].append([])
+			pairs[pairIndex][1] = perfect.pop(0)			
+
+
+	elif struggling:
+		
+		pairs.append([])				#get first kid
+		pairs[pairIndex].append([])
+		pairs[pairIndex][0] = struggling.pop()
+
+		if perfect: #try to get a perfect kid first
+			if pairs[pairIndex][0][3] != perfect[-1][0]: #preventing same pairs
+				pairs[pairIndex].append([])
+				pairs[pairIndex][1] = perfect.pop()
+
+			else:	#remove first perfect kid instead of last
+				pairs[pairIndex].append([])
+				pairs[pairIndex][1] = perfect.pop(0)			
+
+
+		else:	#if none available, take an antsy kid
+			if pairs[pairIndex][0][3] != antsy[-1][0]: #preventing same pairs
+				pairs[pairIndex].append([])
+				pairs[pairIndex][1] = antsy.pop()
+
+			else:	#remove first perfect kid instead of last
+				pairs[pairIndex].append([])
+				pairs[pairIndex][1] = antsy.pop(0)			
+
+	elif antsy:
+		
+		pairs.append([])				#get first kid
+		pairs[pairIndex].append([])
+		pairs[pairIndex][0] = antsy.pop()
+
+		if pairs[pairIndex][0][3] != perfect[-1][0]: #preventing same pairs
+			pairs[pairIndex].append([])
+			pairs[pairIndex][1] = perfect.pop()
+
+		else:	#remove first perfect kid instead of last
+			pairs[pairIndex].append([])
+			pairs[pairIndex][1] = perfect.pop(0)
+
+	elif perfect:
+
+		pairs.append([])				#get first kid
+		pairs[pairIndex].append([])
+		pairs[pairIndex][0] = perfect.pop()
+
+		if pairs[pairIndex][0][3] != perfect[-1][0]: #preventing same pairs
+			pairs[pairIndex].append([])
+			pairs[pairIndex][1] = perfect.pop()
+
+		else:	#remove first perfect kid instead of last
+			pairs[pairIndex].append([])
+			pairs[pairIndex][1] = perfect.pop(0)
+		
+	pairs[pairIndex][0][1:5] = []			#removing now-unecessary data
+	pairs[pairIndex][1][1:5] = []
+	pairs[pairIndex] = [i[0] for i in pairs[pairIndex]] #flattening
+	pairIndex += 1
+
+shuffle(pairs)
+
+#--------------------------Make loners!------------------------------#
+
+loners = []
+lonerIndex = 0
+
+while True:
+
+	if strugglingAndAntsy:
+		
+		loners.append([])				#get first kid
+		loners[lonerIndex] = strugglingAndAntsy.pop()
+
+	elif struggling:
+		
+		loners.append([])				#get first kid
+		loners[lonerIndex] = struggling.pop()
+	
+	elif antsy:
+		
+		loners.append([])				#get first kid
+		loners[lonerIndex] = antsy.pop()
+	
+	elif perfect:
+		
+		loners.append([])				#get first kid
+		loners[lonerIndex] = perfect.pop()
+
+	else:
+		break
+
+	loners[lonerIndex][1:5] = []
+	lonerIndex += 1
+
+shuffle(loners)
+
+#--------------------------Make tables!------------------------------#
+
+chart = []
+chartIndex = 0
+
+for table in tables:					#sit kids at each table
+	
+	chart.append([])
+	seated = 0
+	groups = 0
+
+	while seated < table[1]: 			#while kids can be sat at this table
+
+		if int(float(table[1])) - seated > 1:		#can we still do pairs?
+			chart[chartIndex].append([])
+			chart[chartIndex][groups] = pairs.pop()
+			groups += 1
+			seated += 2
+		elif int(float(table[1])) - seated == 1:	#else, sit a loner
+			chart[chartIndex].append([])
+			chart[chartIndex][groups] = loners.pop()
+			groups += 1
+			seated += 1
+			break
+		else:										#if we sit only pairs
+			break
+
+	chartIndex += 1
+
+#-------------------------Print out nicely!--------------------------#
+
+print "\nGreat! Here's a new seating chart:\n"
+
+whichTable = 0
+for table in chart:
+	print "%s: %s" % (tables[whichTable][0], table)
+	whichTable += 1

@@ -1,0 +1,14 @@
+ZB, N, N, GF, 1
+XP, Y, N, CP, 1
+JD, N, Y, TD, 1
+TD, N, N, JD, 1
+DO, Y, N, none, 1
+CC, Y, N, JB, 2
+JB, N, Y, CC, 2
+GF, Y, Y, ZB, 2
+CP, N, Y, XP, 2
+DJ, N, Y, none, 2
+SBL, N, N, BR, 3
+BR, Y, N, SBL, 3
+YF, N, N, NAJ, 3
+NAJ, N, Y, YF, 3
